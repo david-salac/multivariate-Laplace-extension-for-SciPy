@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.dual import svd
 from scipy._lib import doccer
 
 # Imports of constants from _multivariate script
@@ -417,11 +418,40 @@ class multivariate_laplace_gen(multi_rv_generic):
         %(_mvl_doc_callparams_note)s
 
         """
-        dim, mean, cov = self._process_parameters(None, mean, cov)
+        # Check preconditions on arguments
+        mean = np.array(mean)
+        cov = np.array(cov)
+        if size is None:
+            shape = []
+        elif isinstance(size, (int, np.integer)):
+            shape = [size]
+        else:
+            shape = size
 
+        if len(mean.shape) != 1:
+            raise ValueError("mean must be 1 dimensional")
+        if (len(cov.shape) != 2) or (cov.shape[0] != cov.shape[1]):
+            raise ValueError("cov must be 2 dimensional and square")
+        if mean.shape[0] != cov.shape[0]:
+            raise ValueError("mean and cov must have same length")
+
+        # Compute shape of output and create a matrix of independent
+        # standard normally distributed random numbers. The matrix has rows
+        # with the same length as mean and as many rows are necessary to
+        # form a matrix of shape final_shape.
+        final_shape = list(shape[:])
+        final_shape.append(mean.shape[0])
         random_state = self._get_random_state(random_state)
-        out = random_state.multivariate_laplace(mean, cov, size)
-        return _squeeze_output(out)
+        # Standard laplace
+        x = random_state.laplace(loc=0.0,
+                                 scale=1.0,
+                                 size=final_shape).reshape(-1, mean.shape[0])
+        dim, mean, cov = self._process_parameters(None, mean, cov)
+        (u, s, v) = svd(cov)
+
+        x = np.dot(x, np.sqrt(s)[:, None] * v)
+        x += mean
+        return x
 
     def entropy(self, mean=None, cov=1):
         """
