@@ -54,7 +54,7 @@ def standard_anlyse(clsx = multivariate_normal):
        plt.show()
 
 # Plot the Multivariate Normal (Gauss) distribution version
-standard_an(multivariate_normal)
+standard_anlyse(multivariate_normal)
 
 # Plot the Multivariate Double Exponential (Laplace) distribution version
-standard_an(multivariate_laplace)
+standard_anlyse(multivariate_laplace)
